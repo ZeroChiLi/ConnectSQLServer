@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -10,27 +11,51 @@ namespace ConnectSQLServer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("motherfucker!");
+            SqlConnection sqlConnection;
+            ConnectSQL(out sqlConnection);
 
-            ConnectSQL();
+            string tableName = "Account";
+
+            //ReaderSQLData(sqlConnection);
+
+            SqlDataAdapter dataAdapter = GetDataAdapter(sqlConnection, tableName);
+            DataSet dataSet = FillAdapterWithDataSet(ref dataAdapter, tableName);
+
+            ReaderSQLData2(dataSet, tableName);
+
+            ModifySQLDataByRow<string>(dataAdapter, dataSet, tableName, "Name", "23333");
+            ReaderSQLData2(dataSet, tableName);
+
+            AddSQLData(dataAdapter, dataSet, tableName, "KINGDOM", "fucker", 666);
+            ReaderSQLData2(dataSet, tableName);
+
+            RemoveSQLDataByRow(dataAdapter, dataSet, tableName, 1);
+            ReaderSQLData2(dataSet, tableName);
+
+            dataSet.Dispose();        // 释放DataSet对象
+            dataAdapter.Dispose();    // 释放SqlDataAdapter对象
+            //myDataReader.Dispose();     // 释放SqlDataReader对象
+            sqlConnection.Close();             // 关闭数据库连接
+            sqlConnection.Dispose();           // 释放数据库连接对象
+
 
             Console.ReadLine();
         }
 
-        static void ConnectSQL()
+        static void ConnectSQL(out SqlConnection sqlConnection)
         {
             Console.WriteLine("连接数据库");
             //服务器资源管理器->数据连接->数据库右键属性->连接->连接字符串
             string constr = "Data Source=PC-LCL\\SQLEXPRESS;Initial Catalog=TestDb;Integrated Security=True;Pooling=False";
-            SqlConnection con = new SqlConnection(constr);
+            sqlConnection = new SqlConnection(constr);
             string sql = "select * from Account";
-            SqlCommand com = new SqlCommand(sql, con);
+            SqlCommand com = new SqlCommand(sql, sqlConnection);
             try
             {
-                con.Open();
+                sqlConnection.Open();
                 Console.WriteLine("成功连接数据库");
                 int x = (int)com.ExecuteScalar();
-                Console.WriteLine(string.Format("成功读取{0},条记录", x));
+                Console.WriteLine(string.Format("成功读取{0}条记录", x));
             }
             catch (Exception e)
             {
@@ -41,10 +66,83 @@ namespace ConnectSQLServer
             {
                 //con.Close();
                 Console.WriteLine("END");
-                Console.ReadLine();
             }
         }
-       
+
+        static void ReaderSQLData(SqlConnection sqlConnection)
+        {
+            SqlCommand command = new SqlCommand();
+            command.Connection = sqlConnection;
+            command.CommandType = CommandType.Text;
+            command.CommandText = "Select * from Account";
+
+            SqlDataReader reader = command.ExecuteReader();     //执行读取，返回“流”
+            while (reader.Read())
+            {
+                Console.WriteLine(reader["Name"].ToString() + " | " + reader["Sex"].ToString() + " | " + reader["Age"].ToString());
+            }
+        }
+
+        static void ReaderSQLData2(DataSet dataSet, string tableName)
+        {
+            DataTable myTable = dataSet.Tables[tableName];
+            foreach (DataRow myRow in myTable.Rows)
+            {
+                foreach (DataColumn myColumn in myTable.Columns)
+                    Console.Write(myRow[myColumn] + " | "); //遍历表中的每个单元格
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
+        static SqlDataAdapter GetDataAdapter(SqlConnection sqlConnection, string tableName)
+        {
+            return new SqlDataAdapter("select * from " + tableName, sqlConnection);
+        }
+
+        static DataSet FillAdapterWithDataSet(ref SqlDataAdapter dataAdapter, string tableName)
+        {
+            DataSet dataSet = new DataSet();
+            dataAdapter.Fill(dataSet, tableName);
+            return dataSet;
+        }
+
+        static void ModifySQLDataByRow<ModifyType>(SqlDataAdapter dataAdapter, DataSet dataSet, string tableName, string rowName, ModifyType value)
+        {
+            // 修改DataSet
+            DataTable myTable = dataSet.Tables[tableName];
+            foreach (DataRow myRow in myTable.Rows)
+                myRow[rowName] = value;
+
+            // 将DataSet的修改提交至“数据库”
+            SqlCommandBuilder mySqlCommandBuilder = new SqlCommandBuilder(dataAdapter);
+            dataAdapter.Update(dataSet, tableName);
+        }
+
+        static void AddSQLData(SqlDataAdapter dataAdapter, DataSet dataSet,string tableName,string name,string sex, uint age)
+        {
+            DataTable myTable = dataSet.Tables[tableName];
+            // 添加一行
+            DataRow myRow = myTable.NewRow();
+            myRow["Name"] = name;
+            myRow["Sex"] = sex;
+            myRow["Age"] = age;
+
+            myTable.Rows.Add(myRow);
+
+            // 将DataSet的修改提交至“数据库”
+            SqlCommandBuilder mySqlCommandBuilder = new SqlCommandBuilder(dataAdapter);
+            dataAdapter.Update(dataSet, tableName);
+        }
+        
+        static void RemoveSQLDataByRow(SqlDataAdapter dataAdapter, DataSet dataSet, string tableName,int deleteIndex)
+        {
+            DataTable myTable = dataSet.Tables[tableName];
+            myTable.Rows[deleteIndex].Delete();
+
+            SqlCommandBuilder mySqlCommandBuilder = new SqlCommandBuilder(dataAdapter);
+            dataAdapter.Update(dataSet, tableName);
+        }
 
     }
 }
