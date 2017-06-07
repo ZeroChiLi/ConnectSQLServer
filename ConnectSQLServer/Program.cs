@@ -21,23 +21,27 @@ namespace ConnectSQLServer
             SqlDataAdapter dataAdapter = GetDataAdapter(sqlConnection, tableName);
             DataSet dataSet = FillAdapterWithDataSet(ref dataAdapter, tableName);
 
-            ReaderSQLData2(dataSet, tableName);
+            //ReaderSQLData2(dataSet, tableName);
 
-            ModifySQLDataByRow<string>(dataAdapter, dataSet, tableName, "Name", "23333");
-            ReaderSQLData2(dataSet, tableName);
+            //ModifySQLDataByRow<string>(dataAdapter, dataSet, tableName, "Name", "23333");
+            //ReaderSQLData2(dataSet, tableName);
 
-            AddSQLData(dataAdapter, dataSet, tableName, "KINGDOM", "fucker", 666);
-            ReaderSQLData2(dataSet, tableName);
+            //AddSQLData(dataAdapter, dataSet, tableName, "KINGDOM", "fucker", 666);
+            //ReaderSQLData2(dataSet, tableName);
 
-            RemoveSQLDataByRow(dataAdapter, dataSet, tableName, 1);
-            ReaderSQLData2(dataSet, tableName);
+            //RemoveSQLDataByRow(dataAdapter, dataSet, tableName, 1);
+            //ReaderSQLData2(dataSet, tableName);
 
-            dataSet.Dispose();        // 释放DataSet对象
-            dataAdapter.Dispose();    // 释放SqlDataAdapter对象
-            //myDataReader.Dispose();     // 释放SqlDataReader对象
-            sqlConnection.Close();             // 关闭数据库连接
-            sqlConnection.Dispose();           // 释放数据库连接对象
+            //ReaderSQLData(sqlConnection, "777", "123");
+            //AddSQLData2(sqlConnection, "sdaiofajsoi", "12333");
+            //RemoveSQLData2(sqlConnection, "123");
 
+
+            //dataSet.Dispose();        // 释放DataSet对象
+            //dataAdapter.Dispose();    // 释放SqlDataAdapter对象
+            ////myDataReader.Dispose();     // 释放SqlDataReader对象
+            //sqlConnection.Close();             // 关闭数据库连接
+            //sqlConnection.Dispose();           // 释放数据库连接对象
 
             Console.ReadLine();
         }
@@ -69,17 +73,25 @@ namespace ConnectSQLServer
             }
         }
 
-        static void ReaderSQLData(SqlConnection sqlConnection)
+        static void ReaderSQLData(SqlConnection sqlConnection, string accountName, string password)
         {
             SqlCommand command = new SqlCommand();
             command.Connection = sqlConnection;
             command.CommandType = CommandType.Text;
-            command.CommandText = "Select * from Account";
+
+            StringBuilder commandStr = new StringBuilder();
+            commandStr.Append(" Select * from Account");
+            commandStr.Append(" Where AccountName = '" + accountName + "'" + " And Password = '" + password + "'");
+            command.CommandText = commandStr.ToString();
 
             SqlDataReader reader = command.ExecuteReader();     //执行读取，返回“流”
-            while (reader.Read())
+            if (reader.Read())
             {
-                Console.WriteLine(reader["Name"].ToString() + " | " + reader["Sex"].ToString() + " | " + reader["Age"].ToString());
+                Console.WriteLine(reader["AccountName"].ToString() + " | " + reader["Password"].ToString());
+            }
+            else
+            {
+                Console.WriteLine("shit");
             }
         }
 
@@ -119,7 +131,7 @@ namespace ConnectSQLServer
             dataAdapter.Update(dataSet, tableName);
         }
 
-        static void AddSQLData(SqlDataAdapter dataAdapter, DataSet dataSet,string tableName,string name,string sex, uint age)
+        static void AddSQLData(SqlDataAdapter dataAdapter, DataSet dataSet, string tableName, string name, string sex, uint age)
         {
             DataTable myTable = dataSet.Tables[tableName];
             // 添加一行
@@ -134,14 +146,38 @@ namespace ConnectSQLServer
             SqlCommandBuilder mySqlCommandBuilder = new SqlCommandBuilder(dataAdapter);
             dataAdapter.Update(dataSet, tableName);
         }
-        
-        static void RemoveSQLDataByRow(SqlDataAdapter dataAdapter, DataSet dataSet, string tableName,int deleteIndex)
+
+        static void AddSQLData2(SqlConnection sqlConnection, string name, string password)
+        {
+            SqlCommand command = new SqlCommand();
+            command.Connection = sqlConnection;
+
+            StringBuilder commandStr = new StringBuilder();
+            commandStr.Append(" Insert Into Account(AccountName, Password) Values('" + name + "','" + password + "')");
+
+            command.CommandText = commandStr.ToString();
+            command.ExecuteScalar();
+        }
+
+        static void RemoveSQLDataByRow(SqlDataAdapter dataAdapter, DataSet dataSet, string tableName, int deleteIndex)
         {
             DataTable myTable = dataSet.Tables[tableName];
             myTable.Rows[deleteIndex].Delete();
 
             SqlCommandBuilder mySqlCommandBuilder = new SqlCommandBuilder(dataAdapter);
             dataAdapter.Update(dataSet, tableName);
+        }
+
+        static void RemoveSQLData2(SqlConnection sqlConnection, string name)
+        {
+            SqlCommand command = new SqlCommand();
+            command.Connection = sqlConnection;
+
+            StringBuilder commandStr = new StringBuilder();
+            commandStr.Append("  DELETE FROM Account WHERE AccountName = '" + name + "'");
+
+            command.CommandText = commandStr.ToString();
+            command.ExecuteScalar();
         }
 
     }
